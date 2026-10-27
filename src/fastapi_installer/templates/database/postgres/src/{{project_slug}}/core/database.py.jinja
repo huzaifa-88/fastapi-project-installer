@@ -1,0 +1,25 @@
+from urllib.parse import quote_plus
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class DatabaseSettings(BaseSettings):
+    """PostgreSQL connection settings, read from POSTGRES_* environment variables."""
+
+    model_config = SettingsConfigDict(env_prefix="POSTGRES_", env_file=".env", extra="ignore")
+
+    host: str = "localhost"
+    port: int = Field(default=5432, ge=1, le=65535)
+    user: str = "postgres"
+    password: SecretStr = SecretStr("postgres")
+    db: str = "{{ project_slug }}"
+    pool_size: int = Field(default=5, ge=1)
+    connect_timeout: float = Field(default=5.0, gt=0)
+    echo: bool = False
+
+    @property
+    def url(self) -> str:
+        user = quote_plus(self.user)
+        password = quote_plus(self.password.get_secret_value())
+        return f"postgresql+asyncpg://{user}:{password}@{self.host}:{self.port}/{self.db}"

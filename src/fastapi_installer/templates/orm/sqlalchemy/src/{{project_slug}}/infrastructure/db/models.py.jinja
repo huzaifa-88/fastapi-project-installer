@@ -1,0 +1,6 @@
+"""Import every ORM model here so Base.metadata knows all tables (used by Alembic)."""
+
+from {{ project_slug }}.infrastructure.db.base import Base
+from {{ project_slug }}.infrastructure.users.models import UserModel
+
+__all__ = ["Base", "UserModel"]
