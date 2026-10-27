@@ -1,0 +1,67 @@
+# {{ project_name }}
+
+Generated with fastapi-installer.
+
+## Getting started
+
+```bash
+cp .env.example .env
+uv sync
+{%- if infra == "docker-compose" %}
+docker compose up -d db              # start PostgreSQL
+{%- endif %}
+{%- if migrations == "alembic" %}
+uv run alembic upgrade head          # create the tables
+{%- endif %}
+uv run fastapi dev src/{{ project_slug }}/main.py
+```
+{%- if infra == "none" %}
+
+You need a running PostgreSQL server. Put its connection details in `.env` (`POSTGRES_*`).
+{%- else %}
+
+Port 5432 already in use? Set `POSTGRES_PORT` in `.env`.
+{%- endif %}
+{%- if migrations == "none" %}
+
+Tables are created automatically when the app starts. Only new tables are created; changes
+to existing tables are not applied. Add Alembic when you need real schema migrations.
+{%- endif %}
+
+Open http://127.0.0.1:8000/docs.
+{%- if infra == "docker-compose" %}
+
+Run the whole stack in containers instead: `docker compose up --build`.
+{%- endif %}
+
+## Project layout (clean architecture)
+
+```
+src/{{ project_slug }}/
+├── main.py              # app factory: routers, error handlers, lifespan
+├── core/                # settings, logging, database config
+├── domain/              # entities, repository interfaces, business errors (no framework code)
+├── application/         # services (use cases) that orchestrate the domain
+├── infrastructure/      # SQLAlchemy models, sessions, repository implementations
+└── presentation/api/    # routers, request/response schemas, dependency wiring
+```
+
+Dependencies point inward: `presentation` → `application` → `domain`, and `infrastructure`
+implements the interfaces declared in `domain`.
+
+### Adding a feature
+1. `domain/<feature>/`: entity, repository interface, errors
+2. `application/<feature>/`: service + DTOs
+3. `infrastructure/<feature>/`: ORM model + repository; import the model in `infrastructure/db/models.py`
+4. `presentation/api/v1/`: schemas + router; register it in `v1/router.py`; wire deps in `deps.py`
+{%- if migrations == "alembic" %}
+5. `uv run alembic revision --autogenerate -m "add <feature>"` and review the migration
+
+## Migrations
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+uv run alembic upgrade head
+uv run alembic downgrade -1
+```
+{%- endif %}
