@@ -1,0 +1,20 @@
+from fastapi import APIRouter, Response, status
+
+from {{ project_slug }}.presentation.api.deps import DatabaseHealthDep
+
+router = APIRouter(prefix="/health", tags=["health"])
+
+
+@router.get("")
+async def liveness() -> dict[str, str]:
+    """The process is up."""
+    return {"status": "ok"}
+
+
+@router.get("/ready")
+async def readiness(response: Response, database_ok: DatabaseHealthDep) -> dict[str, str]:
+    """The app can serve traffic: its dependencies are reachable."""
+    if not database_ok:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "unavailable", "database": "unreachable"}
+    return {"status": "ok", "database": "ok"}

@@ -1,0 +1,36 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from {{ project_slug }}.core.config import get_settings
+from {{ project_slug }}.core.logging import configure_logging
+from {{ project_slug }}.infrastructure.db.session import close_database{% if migrations == "none" %}, create_tables{% endif %}
+from {{ project_slug }}.presentation.api.error_handlers import register_error_handlers
+from {{ project_slug }}.presentation.api.health import router as health_router
+from {{ project_slug }}.presentation.api.v1.router import api_router
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+{%- if migrations == "none" %}
+    await create_tables()
+{%- endif %}
+    yield
+    await close_database()
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    configure_logging(debug=settings.debug)
+
+    # DEBUG only raises log verbosity. FastAPI's debug mode is left off because it would
+    # bypass the error handlers and send stack traces to clients.
+    app = FastAPI(title=settings.app_name, lifespan=lifespan)
+    register_error_handlers(app)
+    app.include_router(health_router)
+    app.include_router(api_router, prefix=settings.api_v1_prefix)
+    return app
+
+
+app = create_app()

@@ -1,0 +1,27 @@
+from uuid import UUID
+
+from {{ project_slug }}.application.users.dto import CreateUserInput
+from {{ project_slug }}.domain.users.entities import User
+from {{ project_slug }}.domain.users.exceptions import UserAlreadyExistsError, UserNotFoundError
+from {{ project_slug }}.domain.users.repository import UserRepository
+
+
+class UserService:
+    def __init__(self, repository: UserRepository) -> None:
+        self._repository = repository
+
+    async def create_user(self, data: CreateUserInput) -> User:
+        email = data.email.strip().lower()
+        if await self._repository.get_by_email(email) is not None:
+            raise UserAlreadyExistsError(email)
+        user = User(email=email, full_name=data.full_name.strip())
+        return await self._repository.add(user)
+
+    async def get_user(self, user_id: UUID) -> User:
+        user = await self._repository.get_by_id(user_id)
+        if user is None:
+            raise UserNotFoundError(user_id)
+        return user
+
+    async def list_users(self, *, limit: int, offset: int) -> list[User]:
+        return await self._repository.list_all(limit=limit, offset=offset)

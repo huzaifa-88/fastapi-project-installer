@@ -1,0 +1,13 @@
+from uuid import UUID
+
+from {{ project_slug }}.domain.exceptions import ConflictError, NotFoundError
+
+
+class UserNotFoundError(NotFoundError):
+    def __init__(self, user_id: UUID) -> None:
+        super().__init__(f"User '{user_id}' was not found.")
+
+
+class UserAlreadyExistsError(ConflictError):
+    def __init__(self, email: str) -> None:
+        super().__init__(f"A user with email '{email}' already exists.")

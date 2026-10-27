@@ -1,0 +1,21 @@
+"""Persistence contract for users. Implemented in the infrastructure layer."""
+
+from abc import ABC, abstractmethod
+from uuid import UUID
+
+from {{ project_slug }}.domain.users.entities import User
+
+
+class UserRepository(ABC):
+    @abstractmethod
+    async def get_by_id(self, user_id: UUID) -> User | None: ...
+
+    @abstractmethod
+    async def get_by_email(self, email: str) -> User | None: ...
+
+    @abstractmethod
+    async def list_all(self, *, limit: int, offset: int) -> list[User]: ...
+
+    @abstractmethod
+    async def add(self, user: User) -> User:
+        """Persist a new user. Raises UserAlreadyExistsError if the email is taken."""
