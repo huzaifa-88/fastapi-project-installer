@@ -1,0 +1,5 @@
+#!/bin/sh
+# Block commits that fail lint, import ordering, formatting or tests.
+set -e
+echo "pre-commit: running make check"
+make check
